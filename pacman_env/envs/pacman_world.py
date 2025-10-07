@@ -22,7 +22,7 @@ class PacManWorld(gym.Env):
     def __init__(self, render_mode=None, grid=None):
         # Placeholder
         if grid == None:
-            grid = np.array([[1, 2, 2, 2, 2],
+            self.grid = np.array([[1, 2, 2, 2, 2],
                     [2, 2, 3, 3, 2],
                     [2, 2, 3, 3, 2],
                     [2, 3, 3, 3, 2],
@@ -32,24 +32,24 @@ class PacManWorld(gym.Env):
          
         # The state information given to the algorithm
         self.observation_space = spaces.Dict({           
-            "grid": spaces.Box(low = 0, high = 4, shape=grid.shape, dtype=np.int8), # State of the world
+            "grid": spaces.Box(low = 0, high = 4, shape=self.grid.shape, dtype=np.int8), # State of the world
             "direction": spaces.Discrete(4) # Pacman's current direction
         })
          
         # The actions the algorithm can take
         self.action_space = spaces.Discrete(4)
         self.action_to_direction = {
-            Actions.right.value: np.array([1, 0]),
-            Actions.up.value: np.array([0, 1]),
-            Actions.left.value: np.array([-1, 0]),
-            Actions.down.value: np.array([0, -1]),
+            Actions.right.value: np.array([0, 1]),
+            Actions.up.value: np.array([-1, 0]),
+            Actions.left.value: np.array([0, -1]),
+            Actions.down.value: np.array([11, 0]),
         }
 
         # For faster updating after step
-        self.pacman_loc = np.where(self.grid == Cells.pacman)
+        self.pacman_loc = np.argwhere(self.grid == Cells.pacman.value)[0]
         self.pacman_dir = Actions.down # Arbitrary? 
-        self.ghost_loc = np.where(self.grid == Cells.ghost)
-        self.remaining_pips = np.sum(self.grid == Cells.pip)
+        self.ghost_loc = np.argwhere(self.grid == Cells.ghost.value)[0]
+        self.remaining_pips = np.sum(self.grid == Cells.pip.value)
 
         # For graphics
         assert render_mode is None or render_mode in self.metadata["render_modes"]
@@ -70,10 +70,10 @@ class PacManWorld(gym.Env):
 
         # Calculating score
         score = 0
-        if self.grid[self.pacman_loc] == Cells.pip:
+        if self.grid[self.pacman_loc] == Cells.pip.value:
             score = 1
             self.remaining_pips -= 1
-        self.grid[self.pacman_loc] = Cells.pacman
+        self.grid[self.pacman_loc] = Cells.pacman.value
 
         # Determining if env has terminated (if ghosts caught Pacman or if all pips are eaten)
         # Should do this earlier (before score)?
@@ -100,14 +100,14 @@ class PacManWorld(gym.Env):
         return
     
     def _valid_loc(self, new_loc):
-        if not (new_loc[0] >= 0 and new_loc[0] < self.maze.shape[0] and new_loc[1] >= 0 and new_loc[1] < self.maze.shape[1]):
+        if not (new_loc[0] >= 0 and new_loc[0] < self.grid.shape[0] and new_loc[1] >= 0 and new_loc[1] < self.grid.shape[1]):
             return False #Out of bounds
-        if self.grid[new_loc] == Cells.wall:
+        if self.grid[tuple(new_loc)] == Cells.wall.value:
             return False #Can't move into wall
         return True
     
     def _update_pacman(self, action):
-        self.grid[self.pacman_loc] = Cells.empty # Cell we leave becomes empty
+        self.grid[self.pacman_loc] = Cells.empty.value # Cell we leave becomes empty
         movement = self.action_to_direction[action]
         new_loc = self.pacman_loc + movement
 
@@ -133,4 +133,4 @@ class PacManWorld(gym.Env):
         return False
     
     def _get_obs(self):
-        return {"grid": self.grid, "direction": self.pacman_dir}
+        return {"grid": self.grid.copy(), "direction": self.pacman_dir.value}
