@@ -20,16 +20,11 @@ class Cells(Enum):
 class PacManWorld(gym.Env):
     metadata = {"render_modes": ["human"], "render_fps": 4}
     def __init__(self, render_mode=None, grid=None):
-        # Placeholder
         if grid == None:
-            self.grid = np.array([[1, 2, 2, 2, 2],
-                    [2, 2, 3, 3, 2],
-                    [2, 2, 3, 3, 2],
-                    [2, 3, 3, 3, 2],
-                    [2, 2, 2, 2, 4]]) 
+            self._generate_grid()
         else:
             self.grid = grid
-         
+
         # The state information given to the algorithm
         self.observation_space = spaces.Dict({           
             "grid": spaces.Box(low = 0, high = 4, shape=self.grid.shape, dtype=np.int8), # State of the world
@@ -42,23 +37,26 @@ class PacManWorld(gym.Env):
             Actions.right.value: np.array([0, 1]),
             Actions.up.value: np.array([-1, 0]),
             Actions.left.value: np.array([0, -1]),
-            Actions.down.value: np.array([11, 0]),
+            Actions.down.value: np.array([1, 0]),
         }
-
-        # For faster updating after step
-        self.pacman_loc = np.argwhere(self.grid == Cells.pacman.value)[0]
-        self.pacman_dir = Actions.down # Arbitrary? 
-        self.ghost_loc = np.argwhere(self.grid == Cells.ghost.value)[0]
-        self.remaining_pips = np.sum(self.grid == Cells.pip.value)
+        # Track some positions, stats to make updates easier
+        self._update_stats()
 
         # For graphics
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
 
     
-    def reset(self):
-        return
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed) # Required by library
+        # New grid, update stats accordingly
+        self._generate_grid()
+        self._update_stats()
+
+        # Returns observations, auxiliary info (5th val returned in step)
+        return self._get_obs(), {}
     
+    # Update grid after action chosen
     def step(self, action):
         terminated = False
     
@@ -73,17 +71,19 @@ class PacManWorld(gym.Env):
         if self.grid[self.pacman_loc] == Cells.pip.value:
             score = 1
             self.remaining_pips -= 1
+            # Adding new pips if they drop too low
+            if self.remaining_pips < self.pip_threshold:
+                self._regenerate_pellets()
         self.grid[self.pacman_loc] = Cells.pacman.value
 
-        # Determining if env has terminated (if ghosts caught Pacman or if all pips are eaten)
+        # Determining if env has terminated (if ghosts caught Pacman)
         # Should do this earlier (before score)?
         # Given that ghost is faster, need to make sure it doesn't skip over pacman
         # Ex. 
         # 0 P G -> G 0 P because ghost moves 2 left, pacman moves 1 right
-        # If all pips eaten, done game
-        if self.remaining_pips == 0:
-            terminated = True
         # If ghosts caught pacman, done game
+        if self._caught_pacman():
+            terminated = True
         
         observation = self._get_obs()
         # observation is data given to algorithm
@@ -91,12 +91,13 @@ class PacManWorld(gym.Env):
         # terminated is if episode is over
         # 4th arg is if we truncate the episode (lasted too long & cut it short) 
         # 5th is extra info for debugging(?) 
-        return observation, score, terminated, False, None
+        return observation, score, terminated, False, {}
     
     def render(self):
         return
     
     def close(self):
+        # Only stuff we have to do here is if the graphics/rendering needs to be closed
         return
     
     def _valid_loc(self, new_loc):
@@ -107,7 +108,7 @@ class PacManWorld(gym.Env):
         return True
     
     def _update_pacman(self, action):
-        self.grid[self.pacman_loc] = Cells.empty.value # Cell we leave becomes empty
+        self.grid[tuple(self.pacman_loc)] = Cells.empty.value # Cell we leave becomes empty
         movement = self.action_to_direction[action]
         new_loc = self.pacman_loc + movement
 
@@ -134,3 +135,31 @@ class PacManWorld(gym.Env):
     
     def _get_obs(self):
         return {"grid": self.grid.copy(), "direction": self.pacman_dir.value}
+
+    # A function to update tracked values about state
+    def _update_stats(self):
+         # For faster updating after step
+        self.pacman_loc = np.argwhere(self.grid == Cells.pacman.value)[0]
+        self.pacman_dir = Actions.down.value # Arbitrary? 
+        self.ghost_loc = np.argwhere(self.grid == Cells.ghost.value)[0]
+        self.remaining_pips = np.sum(self.grid == Cells.pip.value)
+        self.pip_threshold = (self.remaining_pips//5) + 1 # Fifth of starting pips, rounded up (can change later)
+
+    # A function to add more pellets once they drop below a threshold
+    def _regenerate_pellets(self):
+        # Get all empty spaces, pick some at random and add pips
+        # Add half of pip_threshold? i.e. repopulate 10% of space at random
+        empty = np.argwhere(self.grid == Cells.empty.value)
+        n_add = self.pip_threshold//2 + 1
+        chosen = empty[np.random.choice(len(empty), n_add, replace=False)]
+        self.grid[chosen[:,0], chosen[:,1]] = Cells.pip.value
+
+    # Function to refresh grid after episode finished
+    # This is a placeholder
+    def _generate_grid(self):
+        self.grid = np.array(
+                   [[1, 2, 2, 2, 2],
+                    [2, 2, 3, 3, 2],
+                    [2, 2, 3, 3, 2],
+                    [2, 3, 3, 3, 2],
+                    [2, 2, 2, 2, 4]]) 
