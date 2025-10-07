@@ -19,65 +19,60 @@ class Cells(Enum):
 
 class PacManWorld(gym.Env):
     metadata = {"render_modes": ["human"], "render_fps": 4}
-    def __init__(self, render_mode=None, maze=None):
+    def __init__(self, render_mode=None, grid=None):
         # Placeholder
-        if maze == None:
-            maze = [[1, 2, 2, 2, 2],
+        if grid == None:
+            grid = np.array([[1, 2, 2, 2, 2],
                     [2, 2, 3, 3, 2],
                     [2, 2, 3, 3, 2],
                     [2, 3, 3, 3, 2],
-                    [2, 2, 2, 2, 4]] 
-    
-        self.maze = maze
+                    [2, 2, 2, 2, 4]]) 
+        else:
+            self.grid = grid
+         
+        # The state information given to the algorithm
         self.observation_space = spaces.Dict({           
-            "grid": spaces.Box(low = 0, high = 4, shape=maze.shape, dtype=np.int8), # State of the world
+            "grid": spaces.Box(low = 0, high = 4, shape=grid.shape, dtype=np.int8), # State of the world
             "direction": spaces.Discrete(4) # Pacman's current direction
         })
-
+         
+        # The actions the algorithm can take
         self.action_space = spaces.Discrete(4)
-
         self.action_to_direction = {
             Actions.right.value: np.array([1, 0]),
             Actions.up.value: np.array([0, 1]),
             Actions.left.value: np.array([-1, 0]),
             Actions.down.value: np.array([0, -1]),
         }
-        # For faster updating after step
-        self.pacman_loc = (0, 0) # Search for '1' in grid?
-        self.pacman_dir = Actions.down # Arbitrary? 
 
+        # For faster updating after step
+        self.pacman_loc = np.where(self.grid == Cells.pacman)
+        self.pacman_dir = Actions.down # Arbitrary? 
+        self.ghost_loc = np.where(self.grid == Cells.ghost)
+        self.remaining_pips = np.sum(self.grid == Cells.pip)
+
+        # For graphics
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
 
-        
-        return
     
     def reset(self):
         return
     
     def step(self, action):
+        terminated = False
+    
         # Update ghosts based on Pacmans current location
         self._update_ghosts()
 
         # Update Pacman based on the chosen action
-        self.grid[self.pacman_loc] = Cells.empty
-        direction = self.action_to_direction[action]
-        new_loc = self.pacman_loc + direction
-
-        if self._valid_loc(new_loc): # Next loc in-bounds, not blocked by wall
-            self.pacman_loc = new_loc
-            self.pacman_dir = action
-        else: # Invalid action, continue in same direction
-            direction = self.action_to_direction[self.pacman_dir]
-            new_loc = self.pacman_loc + direction
-            if self._valid_loc(new_loc): #Check that can keep moving in this direction
-                self.pacman_loc = new_loc
-            # If can't keep moving, Pacman location doesn't change
+        self._update_pacman(action)
 
         # Calculating score
         score = 0
         if self.grid[self.pacman_loc] == Cells.pip:
             score = 1
+            self.remaining_pips -= 1
         self.grid[self.pacman_loc] = Cells.pacman
 
         # Determining if env has terminated (if ghosts caught Pacman or if all pips are eaten)
@@ -85,13 +80,17 @@ class PacManWorld(gym.Env):
         # Given that ghost is faster, need to make sure it doesn't skip over pacman
         # Ex. 
         # 0 P G -> G 0 P because ghost moves 2 left, pacman moves 1 right
-        terminated = False
+        # If all pips eaten, done game
+        if self.remaining_pips == 0:
+            terminated = True
+        # If ghosts caught pacman, done game
         
+        observation = self._get_obs()
         # observation is data given to algorithm
         # score is reward
         # terminated is if episode is over
-        # 4th arg is if we truncate the episode 
-        # 5th is extra info for debugging
+        # 4th arg is if we truncate the episode (lasted too long & cut it short) 
+        # 5th is extra info for debugging(?) 
         return observation, score, terminated, False, None
     
     def render(self):
@@ -107,9 +106,31 @@ class PacManWorld(gym.Env):
             return False #Can't move into wall
         return True
     
+    def _update_pacman(self, action):
+        self.grid[self.pacman_loc] = Cells.empty # Cell we leave becomes empty
+        movement = self.action_to_direction[action]
+        new_loc = self.pacman_loc + movement
+
+        if self._valid_loc(new_loc): # Next loc in-bounds, not blocked by wall
+            self.pacman_loc = new_loc
+            self.pacman_dir = action
+        else: # Invalid action, continue in same direction
+            movement = self.action_to_direction[self.pacman_dir]
+            new_loc = self.pacman_loc + movement
+            if self._valid_loc(new_loc): #Check that can keep moving in this direction
+                self.pacman_loc = new_loc
+            # If can't keep moving in old direction, Pacman location doesn't change
+
     # This function should update the position of the ghosts 
     def _update_ghosts(self):
         # Ghost should make the move that minimizes direct distance?
         # I.e. if ghost is x from pacman horizontally, y from pacman vertically
         # If x > y moves horizontally, if y > x moves vertically
         return 0
+    
+    # Function to determine if ghost caught pacman
+    def _caught_pacman(self):
+        return False
+    
+    def _get_obs(self):
+        return {"grid": self.grid, "direction": self.pacman_dir}
