@@ -72,9 +72,15 @@ class PacManWorld(gym.Env):
 
         # Update ghosts based on Pacmans current location
         # This also determines if ghosts caught pacman and episode has terminated
+        if self.ghost_had_pip:
+            self.grid[tuple(self.ghost_loc)] = Cells.pip.value
+        else:
+            self.grid[tuple(self.ghost_loc)] = Cells.empty.value
         self._update_ghosts()
         if self.terminated:
             return self._get_obs(), -5, True, False, {}
+        self.ghost_had_pip = (self.grid[tuple(self.ghost_loc)] == Cells.pip.value)
+        self.grid[tuple(self.ghost_loc)] = Cells.ghost.value
 
         # Calculating score
         score = 0
@@ -148,7 +154,7 @@ class PacManWorld(gym.Env):
     
     # Function to determine if ghost caught pacman
     def _caught_pacman(self):
-        return np.array_equals(self.ghost_loc, self.pacman_loc)
+        return np.array_equal(self.ghost_loc, self.pacman_loc)
     
     def _get_obs(self):
         return {"grid": self.grid.copy(), "direction": self.pacman_dir.value}
@@ -160,6 +166,7 @@ class PacManWorld(gym.Env):
         self.pacman_dir = Actions.down # Doesn't matter, AI will choose direction before first step
         self.ghost_loc = np.argwhere(self.grid == Cells.ghost.value)[0].copy() # Only one ghost, so just take first
         self.ghost_dir = Actions.down # Arbitrary?
+        self.ghost_had_pip = True # Need to know if the ghost was in a cell with a pip so we can replace it when it moves out
         self.remaining_pips = np.sum(self.grid == Cells.pip.value)
         self.pip_threshold = (self.remaining_pips//5) + 1 # Fifth of starting pips, rounded up (can change later)
         self.terminated = False # To abort step early
@@ -181,7 +188,7 @@ class PacManWorld(gym.Env):
             # We exclude this action since we won't consider it unless it is the only option
             if action == self.ghost_dir.opposite():
                 continue
-            next_in_dir = self.ghost_loc + self.action_to_direction(action.value)
+            next_in_dir = self.ghost_loc + self.action_to_direction[action.value]
             if self._valid_loc(next_in_dir):
                 moves.append(action)
         return moves
@@ -227,6 +234,7 @@ class PacManWorld(gym.Env):
         self.grid = np.array(
                    [[1, 2, 2, 2, 2],
                     [2, 2, 3, 3, 2],
-                    [2, 2, 3, 3, 2],
+                    [2, 2, 2, 2, 2],
                     [2, 3, 3, 3, 2],
-                    [2, 2, 2, 2, 4]]) 
+                    [2, 2, 2, 2, 4]],
+                    dtype=np.int8) 
