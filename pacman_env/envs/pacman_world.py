@@ -2,6 +2,8 @@ from enum import Enum
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
+import math
+import pygame
 
 class Actions(Enum):
     right = 0
@@ -100,11 +102,111 @@ class PacManWorld(gym.Env):
         return self._get_obs(), score, False, False, {}
     
     def render(self):
-        return
-    
+        if self.render_mode not in ("human", "rgb_array"):
+            return
+        return self._render_frame()
+
+    def _render_frame(self):
+
+        H, W = self.grid.shape
+
+        if getattr(self, "_tile", None) is None:
+            # Size of one cell in pixels we can change this later on once we decide how big we want
+            self._tile = 48
+
+        surf_w, surf_h = W * self._tile, H * self._tile
+
+        if self.render_mode == "human":
+            if getattr(self, "_window", None) is None:
+                pygame.init()
+                pygame.display.init()
+                self._window = pygame.display.set_mode((surf_w, surf_h))
+                pygame.display.set_caption("Pacman (Gymnasium)")
+            if getattr(self, "_clock", None) is None:
+                self._clock = pygame.time.Clock()
+
+        # Offscreen surface we draw on every frame
+        canvas = pygame.Surface((surf_w, surf_h))
+        canvas.fill((10, 10, 10))  # background
+
+        # Colors
+        WALL   = (40, 40, 140)
+        PELLET = (255, 215, 0) 
+        PACMAN = (255, 255, 0)
+        GHOST  = (220, 50, 50)
+        DEAD   = (220, 220, 220)
+        FLOOR  = (30, 30, 30)
+        GRID   = (50, 50, 50)
+
+        tag_by_val = {
+            Cells.empty.value:  "empty",
+            Cells.wall.value:   "wall",
+            Cells.pip.value:    "pellet",
+            Cells.ghost.value:  "ghost",
+            Cells.pacman.value: "pacman",
+            Cells.dead.value:   "dead",
+        }
+
+        # Draw grid
+        t = self._tile
+        r2 = t // 2
+
+        for r in range(H):
+            for c in range(W):
+                x, y = c * t, r * t
+                tag = tag_by_val.get(int(self.grid[r, c]), "empty")
+
+                # floor tile
+                pygame.draw.rect(canvas, FLOOR, (x, y, t, t))
+
+                if tag == "wall":
+                    pygame.draw.rect(canvas, WALL, (x, y, t, t))
+                elif tag == "pellet":
+                    # small dot
+                    pygame.draw.circle(canvas, PELLET, (x + r2, y + r2), max(3, t // 8))
+                elif tag == "ghost":
+                    # ghost body (circle) + base
+                    pygame.draw.circle(canvas, GHOST, (x + r2, y + r2), t // 3)
+                    pygame.draw.rect(canvas, GHOST, (x + t // 6, y + r2, t * 2 // 3, t // 3))
+                elif tag == "pacman":
+                    # pacman circle (no mouth cut for simplicity)
+                    pygame.draw.circle(canvas, PACMAN, (x + r2, y + r2), t // 3)
+                elif tag == "dead":
+                    pygame.draw.line(canvas, DEAD, (x + t // 4, y + t // 4), (x + 3 * t // 4, y + 3 * t // 4), 3)
+                    pygame.draw.line(canvas, DEAD, (x + 3 * t // 4, y + t // 4), (x + t // 4, y + 3 * t // 4), 3)
+
+        # grid lines
+        for i in range(H + 1):
+            pygame.draw.line(canvas, GRID, (0, i * t), (surf_w, i * t), 1)
+        for j in range(W + 1):
+            pygame.draw.line(canvas, GRID, (j * t, 0), (j * t, surf_h), 1)
+
+        if self.render_mode == "human":
+            # Keep window responsive
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self._user_quit = True
+
+            self._window.blit(canvas, (0, 0))
+            pygame.display.update()
+            self._clock.tick(self.metadata.get("render_fps", 10))
+            return  # human returns None
+
+        else:  # "rgb_array"
+            arr = pygame.surfarray.array3d(canvas)        # (W, H, 3)
+            arr = np.transpose(arr, (1, 0, 2)).copy()     # -> (H, W, 3)
+            return arr
+
     def close(self):
-        # Only stuff we have to do here is if the graphics/rendering needs to be closed
-        return
+        try:
+            import pygame
+            if getattr(self, "_window", None) is not None:
+                pygame.display.quit()
+            pygame.quit()
+        except Exception:
+            pass
+        self._window = None
+        self._clock = None
     
     def _valid_loc(self, new_loc):
         if not (new_loc[0] >= 0 and new_loc[0] < self.grid.shape[0] and new_loc[1] >= 0 and new_loc[1] < self.grid.shape[1]):
