@@ -1,0 +1,17 @@
+BiWeekly Update 1:
+
+Abaseen:
+Past 2 weeks: created PR to add the render function to create the grid and the pacman and ghost based on the step functions
+Next 2 weeks: Help Anna and Ashok with algorithm development, potentially work on a 3rd one (monte carlo)
+
+Anna:
+Researched and outlined potential algorithms to use
+next: implement Q learning algorithm
+
+Ashok:
+Done: Implemented init, step, reset functions for grid world
+To-do: SARSA algorithm development 
+
+Shuva:
+Worked on the project report part 1
+Next: section 2 of the report, help with algorithms development
