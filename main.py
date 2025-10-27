@@ -1,6 +1,11 @@
 import gymnasium
 import pacman_env
 import pygame
+from qpolicy import encode_state, load_q
+import pickle
+import numpy as np
+
+Q = load_q("models/qlearning.pkl") # import Q-table
 
 env = gymnasium.make('pacman_env/PacManWorld', render_mode="human")
 
@@ -11,7 +16,13 @@ total_reward = 0
 done = False
 
 while not done:
-    action = env.action_space.sample()
+    s = encode_state(observation)
+    
+    # choose best action
+    if s in Q:
+        action = int(np.argmax(Q[s]))
+    else: 
+        action = env.action_space.sample()
     # obs, r, term, trunc, _ = env.step(action)
     observation, reward, terminated, truncated, info = env.step(action)
 

@@ -25,6 +25,9 @@ class Cells(Enum):
 class PacManWorld(gym.Env):
     metadata = {"render_modes": ["human"], "render_fps": 4}
     def __init__(self, render_mode=None, grid=None):
+        self.steps_since_pellet = 0
+        self.last_pos = None
+        self.stay_streak = 0
         if grid == None:
             self._generate_grid()
         else:
@@ -58,19 +61,28 @@ class PacManWorld(gym.Env):
         # New grid, update stats accordingly
         self._generate_grid()
         self._update_stats()
+        self.steps_since_pellet = 0
+        self.last_pos = None
+        self.stay_streak = 0
 
         # Returns observations, auxiliary info (5th val returned in step)
         return self._get_obs(), {}
     
     # Update grid after action chosen
     def step(self, action):
+        truncated = False
 
+        reward = -0.1 # small living cost to discourage camping
+        d0 = self.nearest_pip_dist()
+        
         # Update Pacman based on the chosen action
         self._update_pacman(action)
         if self._caught_pacman(): # If pac-man moves into ghost
             self.grid[tuple(self.pacman_loc)] = Cells.dead.value
             # Return early
             return self._get_obs(), -5, True, False, {}
+        
+        d1 = self.nearest_pip_dist()
 
         # Update ghosts based on Pacmans current location
         # This also determines if ghosts caught pacman and episode has terminated
@@ -85,21 +97,40 @@ class PacManWorld(gym.Env):
         self.grid[tuple(self.ghost_loc)] = Cells.ghost.value
 
         # Calculating score
-        score = 0
         if self.grid[tuple(self.pacman_loc)] == Cells.pip.value:
-            score = 1
+            reward += 1.0
             self.remaining_pips -= 1
+            self.steps_since_pellet = 0
             # Adding new pips if they drop too low
             if self.remaining_pips < self.pip_threshold:
                 self._regenerate_pips()
+        else:
+            self.steps_since_pellet += 1
         self.grid[tuple(self.pacman_loc)] = Cells.pacman.value
+        
+        # penalize same itle streaks to avoid camping
+        pos = tuple(self.pacman_loc)
+        if pos == self.last_pos:
+            self.stay_streak += 1
+        else:
+            self.stay_streak = 0
+        self.last_pos = pos
+        
+        if self.stay_streak >= 3:
+            reward += -0.05 * self.stay_streak
+        
+        if self.steps_since_pellet >= 100:
+            reward += -1.0
+            truncated = True
+            
+        reward += 0.02*(d0-d1)
         
         # observation is data given to algorithm
         # score is reward
         # 3rd is if episode is over
         # 4th arg is if we truncate the episode (lasted too long & cut it short) 
         # 5th is extra info for debugging(?) 
-        return self._get_obs(), score, False, False, {}
+        return self._get_obs(), reward, False, truncated, {}
     
     def render(self):
         if self.render_mode not in ("human", "rgb_array"):
@@ -329,14 +360,22 @@ class PacManWorld(gym.Env):
         for dir in preference_order:
             if dir in dirs:
                 return dir
+            
+    # helper function to make one step towards pellet strictly better than standing still
+    def nearest_pip_dist(self):
+        ps = np.argwhere(self.grid == Cells.pip.value)
+        if len(ps) == 0: return 0
+        pr, pc = self.pacman_loc
+        return int(np.min(np.abs(ps[:,0]-pr) + np.abs(ps[:,1]-pc)))
 
     # Function to refresh grid after episode finished
     # This is a placeholder
     def _generate_grid(self):
         self.grid = np.array(
-                   [[1, 2, 2, 2, 2],
-                    [2, 2, 3, 3, 2],
-                    [2, 2, 2, 2, 2],
-                    [2, 3, 3, 3, 2],
-                    [2, 2, 2, 2, 4]],
+                   [[1, 2, 2, 2, 2, 2],
+                    [2, 3, 3, 3, 3, 2],
+                    [2, 2, 2, 2, 3, 2],
+                    [2, 2, 2, 2, 2, 2],
+                    [3, 3, 3, 3, 2, 2],
+                    [2, 2, 2, 2, 4, 2]],
                     dtype=np.int8) 
