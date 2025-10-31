@@ -1,0 +1,17 @@
+BiWeekly Update 2:
+
+Ashok: 
+Done: Implemented SARSA algorithm
+To-do: SARSA training/ parameter tuning
+
+Abaseen: 
+Done: Env demo and looking into sarsa performance evaluation
+Next weeks: continue with sarsa performance evaluation and continuing with report
+
+Anna: 
+Done: implementing Q-learning algorithm
+To-do: Q-learning training / tuning evaluation
+
+Shuva:
+Done:  started section 2 of report, environment grid world demo
+To Do: Continue working on report, algorithms used, empircal studies
