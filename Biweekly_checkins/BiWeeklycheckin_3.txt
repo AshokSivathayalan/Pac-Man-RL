@@ -1,0 +1,13 @@
+BiWeekly Update 3:
+
+Ashok: partial sarsa hyperparameter testing
+Next 2 weeks : finish hyperparameter testing and all training
+
+Abaseen: added performance evaluation similar to qlearning for sarsa and push changes
+next 2 weeks: finalize everything, finish report and recording
+
+Anna: fine tuning qlearning algorithm, analyzing training
+Todo: analyze and compare results from qlearning and sarsa algorithms
+
+Shuva:  worked on report section 3, research 
+Next 2 weeks: analyze results from training, finish up report and result demo
