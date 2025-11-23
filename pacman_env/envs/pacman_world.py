@@ -310,8 +310,11 @@ class PacManWorld(gym.Env):
         # Add half of pip_threshold? i.e. repopulate 10% of space at random
         empty = np.argwhere(self.grid == Cells.empty.value)
         n_add = self.pip_threshold//2 + 1
-        chosen = empty[self.np_random.choice(len(empty), n_add, replace=False)]
+        if n_add < len(empty):
+            chosen = empty[self.np_random.choice(len(empty), n_add, replace=False)]
+        else: chosen = empty
         self.grid[chosen[:,0], chosen[:,1]] = Cells.pip.value
+        self.remaining_pips += len(chosen)
 
     # Returns the possible directions the ghost can move
     def _get_ghost_moves(self):
