@@ -22,6 +22,8 @@ class Cells(Enum):
     ghost = 4
     dead = 5 # Maybe good idea for rendering, algorithm will only see this at episode end so should have no impact
 
+DEATH_PENALTY = -5
+
 class PacManWorld(gym.Env):
     metadata = {"render_modes": ["human"], "render_fps": 4}
     def __init__(self, render_mode=None, grid=None):
@@ -80,7 +82,7 @@ class PacManWorld(gym.Env):
         if self._caught_pacman(): # If pac-man moves into ghost
             self.grid[tuple(self.pacman_loc)] = Cells.dead.value
             # Return early
-            return self._get_obs(), -5, True, False, {}
+            return self._get_obs(), DEATH_PENALTY, True, False, {}
         
         d1 = self.nearest_pip_dist()
 
@@ -92,7 +94,7 @@ class PacManWorld(gym.Env):
             self.grid[tuple(self.ghost_loc)] = Cells.empty.value
         self._update_ghosts()
         if self.terminated:
-            return self._get_obs(), -5, True, False, {}
+            return self._get_obs(), DEATH_PENALTY, True, False, {}
         self.ghost_had_pip = (self.grid[tuple(self.ghost_loc)] == Cells.pip.value)
         self.grid[tuple(self.ghost_loc)] = Cells.ghost.value
 
@@ -100,6 +102,7 @@ class PacManWorld(gym.Env):
         if self.grid[tuple(self.pacman_loc)] == Cells.pip.value:
             reward += 1.0
             self.remaining_pips -= 1
+            self.eaten += 1
             self.steps_since_pellet = 0
             # Adding new pips if they drop too low
             if self.remaining_pips < self.pip_threshold:
@@ -303,6 +306,7 @@ class PacManWorld(gym.Env):
         self.remaining_pips = np.sum(self.grid == Cells.pip.value)
         self.pip_threshold = (self.remaining_pips//5) + 1 # Fifth of starting pips, rounded up (can change later)
         self.terminated = False # To abort step early
+        self.eaten = 0
 
     # A function to add more pips once they drop below a threshold
     def _regenerate_pips(self):
