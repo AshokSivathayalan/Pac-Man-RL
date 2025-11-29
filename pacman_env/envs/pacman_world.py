@@ -304,7 +304,8 @@ class PacManWorld(gym.Env):
         self.ghost_dir = Actions.down # Arbitrary?
         self.ghost_had_pip = True # Need to know if the ghost was in a cell with a pip so we can replace it when it moves out
         self.remaining_pips = np.sum(self.grid == Cells.pip.value)
-        self.pip_threshold = (self.remaining_pips//5) + 1 # Fifth of starting pips, rounded up (can change later)
+        self.pip_threshold = int(self.remaining_pips * 0.8) # 80% of starting pips, rounded up (can change later)
+        #self.pip_threshold = (self.remaining_pips)//5) + 1 # Fifth of starting pips, rounded up (can change later)
         self.terminated = False # To abort step early
         self.eaten = 0
 
@@ -313,10 +314,15 @@ class PacManWorld(gym.Env):
         # Get all empty spaces, pick some at random and add pips
         # Add half of pip_threshold? i.e. repopulate 10% of space at random
         empty = np.argwhere(self.grid == Cells.empty.value)
-        n_add = self.pip_threshold//2 + 1
-        if n_add < len(empty):
-            chosen = empty[self.np_random.choice(len(empty), n_add, replace=False)]
-        else: chosen = empty
+        if len(empty) == 0:
+            return
+        
+        # 10% of empty spaces
+        frac = 0.10
+        n_add = max(1, int(len(empty)* frac))
+        
+        # choose n_add random empty cells
+        chosen = empty[self.np_random.choice(len(empty), n_add, replace=False)]
         self.grid[chosen[:,0], chosen[:,1]] = Cells.pip.value
         self.remaining_pips += len(chosen)
 
@@ -385,8 +391,8 @@ class PacManWorld(gym.Env):
                 #     [2, 2, 2, 2, 2, 2],
                 #     [3, 3, 3, 3, 2, 2],
                 #     [2, 2, 2, 2, 4, 2]],
-                    [[2,2,3,3,3,2,2,2,3,3,3,2,2,2,4],
-                    [2,2,3,2,2,2,3,2,2,2,3,2,3,2,2],
+                    [[2,4,3,3,3,2,2,2,3,3,3,2,2,2,2],
+                    [2,2,2,2,2,2,3,2,2,2,3,2,3,2,2],
                     [3,3,3,2,3,2,3,3,3,2,3,2,3,2,2],
                     [2,2,2,2,3,2,2,2,3,2,2,2,3,2,2],
                     [2,3,3,2,3,3,3,2,3,3,3,2,3,3,2],
@@ -394,10 +400,10 @@ class PacManWorld(gym.Env):
                     [2,3,3,3,3,2,3,3,3,3,3,2,3,2,2],
                     [2,2,2,2,2,2,2,2,2,2,3,2,2,2,2],
                     [2,3,3,3,3,3,3,3,3,2,3,3,3,3,2],
-                    [2,3,2,2,2,2,2,2,3,2,2,2,2,3,2],
+                    [2,3,2,2,2,2,2,1,3,2,2,2,2,3,2],
                     [2,3,2,3,3,3,3,2,3,3,3,3,2,3,2],
                     [2,2,2,2,2,2,2,2,2,2,2,3,2,2,2],
                     [2,3,3,2,3,2,3,3,3,3,2,3,3,3,2],
                     [2,2,2,2,3,2,2,2,2,2,2,2,2,2,2],
-                    [1,2,2,2,2,2,2,2,2,3,2,2,2,2,2]],
+                    [2,2,2,2,2,2,2,2,2,3,2,2,2,2,2]],
                     dtype=np.int8) 
