@@ -2,7 +2,7 @@
 
 \usepackage{neurips_2024}
 
-\title{Reinforcement Learning in PacMan}
+\title{Reinforcement Learning in Pac-Man}
 
 \author{
 Anonymous Author(s) \
@@ -16,83 +16,67 @@ Address \
 \maketitle
 
 \begin{abstract}
-This project investigates the effectiveness of various reinforcement learning algorithms in the dynamic environment of Pac-Man. We aim to identify the optimal algorithm by evaluating an agent's adaptability to challenges such as faster ghosts, regenerating pellets, and changing maze layouts. Furthermore, we explore the strategic shifts that occur when the agent's objective function is modified to prioritize survival time over maximizing score. By analyzing performance across these diverse conditions, we seek to determine which algorithms are most effective at balancing exploration, adaptability, and long-term reward optimization.
+This project investigates the effectiveness of various reinforcement learning algorithms in the dynamic environment of Pac-Man. We aim to identify the optimal algorithm by evaluating an agent's adaptability to challenges such as faster ghosts and regenerating pellets.By analyzing performance in this modified version of the typical Pac-Man game, we seek to determine which algorithms are most effective at balancing exploration, adaptability, and long-term reward optimization.
 \end{abstract}
 
 \section{Introduction}
 
+% not sure an introduction to the introduction is really necessary 
+\iffalse
 This report details our COMP4010 project on the application and evaluation of reinforcement learning algorithms within the classic arcade game, Pac-Man.
+\fi 
 
-\subsection{What problem does the project focus on?}
+\subsection{Problem}
 
 The central problem this project addresses is identifying the most effective reinforcement learning algorithm for an agent playing Pac-Man under a variety of non-static conditions. The core investigation focuses on the agent's ability to adapt its strategy in response to several environmental challenges. These challenges include:
 
 \begin{itemize}
 \item Navigating the maze against a single ghost that moves at a higher speed than the Pac-Man agent.
 \item Scenarios where pellets regenerate after being consumed, maintaining a set minimum number of pellets in the maze at any given time.
-\item Dynamic environments where the maze layout and the placement of obstacles change between games.
 \end{itemize}
 
-Additionally, we explore how the agent's learned strategy changes when its goal is altered, shifting between maximizing the points collected and maximizing survival time.
 
-\subsection{Why should we care about this problem?}
+\subsection{Importance}
 
 The game of Pac-Man, while seemingly simple, provides a rich and challenging environment that serves as a classic benchmark for reinforcement learning algorithms. Its clearly defined rules, states, and actions make it an ideal testbed for modeling and agent-based learning. The problem is non-trivial; the optimal strategy is not immediately obvious, requiring a balance between offensive (pellet-seeking) and defensive (ghost-avoiding) tactics.
 
-By studying how different algorithms perform in a dynamic Pac-Man environment, we can gain valuable insights into their robustness, adaptability, and efficiency. These findings have broader implications beyond the game itself, informing the application of reinforcement learning to real-world problems characterized by uncertainty and changing conditions, such as robotics, autonomous navigation, and resource management. It is, simply put, a cool way to learn.
+By studying how different algorithms perform in a dynamic Pac-Man environment, we can gain valuable insights into their robustness, adaptability, and efficiency. These findings have broader implications beyond the game itself, informing the application of reinforcement learning to real-world problems characterized by uncertainty and changing conditions, such as robotics, autonomous navigation, and resource management.
 
-\subsection{What are the MDP specifications?}
+\subsection{MDP Specification}
 
 To formally model the Pac-Man environment for our reinforcement learning agent, we define it as a Markov Decision Process (MDP) with the following specifications:
 
 \begin{itemize}
-\item \textbf{States (S):} A state is a complete description of the environment at a given time. It is defined by the tuple (p 
-x
-​
- ,p 
-y
-​
- ,{g 
-x
-​
- ,g 
-y
-​
- } 
-1
-N
-​
- ,F), where (p 
-x
-​
- ,p 
-y
-​
- ) is the coordinate of the Pac-Man agent, {g 
-x
-​
- ,g 
-y
-​
- } 
-1
-N
-​
-  represents the set of coordinates for each of the N ghosts, and F is a matrix representing the layout of the maze, including the locations of pellets, power pellets, and walls.
-\item \textbf{Actions (A):} The action space is discrete and consists of the four cardinal directions: {North, South, East, West}. The agent chooses one of these actions at each time step.
+\item \textbf{States (S):} A state is a complete description of the environment at a given time. It is defined by a $n\times n$ matrix, where $n$ is the width of the board. The board contains information about where walls are, where pellets are, and the locations of Pac-Man and the ghost. 
+
+\item \textbf{Actions (A):} The action space is discrete and consists of the four  directions: {Up, Down, Left, Right}. The agent chooses one of these actions at each time step.
 \item \textbf{Rewards (R):} The agent receives a numerical reward based on the outcome of its actions. The reward function is structured as follows:
 \begin{itemize}
 \item A small positive reward for consuming a standard pellet.
-\item A larger positive reward for consuming a power pellet.
 \item A large negative reward (penalty) for being caught by a ghost.
 \item A small negative reward for each time step to encourage efficient navigation and discourage stalling.
 \end{itemize}
-\item \textbf{Transition Model (P):} The transition model P(s 
-′
- ∣s,a) defines the probability of transitioning from state s to state s 
-′
-  after taking action a. For Pac-Man's movement, the transition is deterministic. However, the environment is stochastic due to the unpredictable behavior of the ghosts, which follow their own movement policies.
-\item \textbf{Discount Factor (γ):} A discount factor, γ∈[0,1], is used to weigh the importance of future rewards. A value closer to 1 results in an agent that is more far-sighted, while a value closer to 0 results in an agent that prioritizes immediate rewards.
+\item \textbf{Transition Model (P):} The transition model P(s',s,a) defines the probability of transitioning from state s to state s' after taking action a. For Pac-Man's movement, the transition is deterministic. The movement of the ghost is also deterministic, follow a policy under which it tries to move towards Pac-Man to minimize the distance between the two. The transition is stochastic in the case of pellet regeneration, which occurs by the random repopulation of empty squares with pellets. 
+
+\item \textbf{Discount Factor ($\gamma$):} A discount factor, $\gamma \in [0,1]$, is used to weigh the importance of future rewards. A value closer to 1 results in an agent that is more far-sighted, while a value closer to 0 results in an agent that prioritizes immediate rewards. In the case of Pac-Man, where we look to get a high score in the game, $\gamma$ should be relatively high to ensure the agent puts emphasis on future rewards. 
 \end{itemize}
+
+\section{Approaches}
+
+\subsection{Previous Approaches}
+
+\subsection{Algorithms Used}
+
+In this project, we implement the algorithms SARSA and Q-Learning. 
+
+\section{Empirical Studies}
+
+\subsection{Experiment Procedure}
+
+\subsection{Results}
+
+\section{Conclusion}
+
+\subsection{Future Work}
 
 \end{document}
