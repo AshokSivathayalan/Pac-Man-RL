@@ -122,7 +122,7 @@ def train_once(run_seed=0, log_dir=LOG_DIR):
                 ep_ret += r
                 steps += 1
                 if r > 0:
-                    ate += int(r)
+                    ate += 1
                 if terminated and r <= -5:
                     hit += 1
 
