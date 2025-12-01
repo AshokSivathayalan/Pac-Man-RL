@@ -1,0 +1,13 @@
+BiWeekly Update 4:
+
+Anna: fixed qlearning and pip regeneration bugs. results analysis
+Next week: add qlearning results to the report
+
+Abaseen: helped with sarsa, did recording
+Next week: finish up report and submit
+
+Ashok: finished sarsa training and hyperparameter tuning
+Next week: add sarsa findings into the report
+
+Shuva: help with performance analysis and demo recording
+Next week: finalize and submit project report
