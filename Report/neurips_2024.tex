@@ -47,27 +47,43 @@ By studying how different algorithms perform in a dynamic Pac-Man environment, w
 To formally model the Pac-Man environment for our reinforcement learning agent, we define it as a Markov Decision Process (MDP) with the following specifications:
 
 \begin{itemize}
-\item \textbf{States (S):} A state is a complete description of the environment at a given time. It is defined by a $n\times n$ matrix, where $n$ is the width of the board. The board contains information about where walls are, where pellets are, and the locations of Pac-Man and the ghost. 
+\item \textbf{States (S):} The environment generates a dictionary observation including the raw grid and direction that Pac-man is facing:
+\begin{verbatim}
+self.observation_space = spaces.Dict({
+"grid": spaces.Box(low = 0, high = 5, shape=self.grid.shape, dtype=np.int8),
+"direction": spaces.Discrete(4)
+})
+\end{verbatim}. The grid encodes almost all information about the current state of the game (pellet location, walls, Pac-Man's location, and the ghost location). Pac-Man's direction is the sole factor not included - its impact is that if Pac-man tries take an invalid turn, he will continue going straight by default. 
+
+The raw observation produced by the environment is immediately converted by the external $\texttt{encode\_state}$ function into a compact, low-dimensional feature tuple. This is necessary due to the massive number of possible states (on the $15 \times 15$ grid, there are billions of distinct states). This feature tuple serves as the effective state $s$ used for all Q-table lookups and learning. The feature set includes the agent's position, a binned measure of ghost proximity, and the direction of the nearest pellet.
 
 \item \textbf{Actions (A):} The action space is discrete and consists of the four  directions: {Up, Down, Left, Right}. The agent chooses one of these actions at each time step.
-\item \textbf{Rewards (R):} The agent receives a numerical reward based on the outcome of its actions. The reward function is structured as follows:
+\item \textbf{Rewards (R):} The agent receives a numerical reward based on the outcome of its actions. The reward function is the product of multiple factors, designed to encourage exploration and pellet collection while still providing a significant penalty for getting caught.
 \begin{itemize}
-\item A small positive reward for consuming a standard pellet.
-\item A large negative reward (penalty) for being caught by a ghost.
-\item A small negative reward for each time step to encourage efficient navigation and discourage stalling.
+\item A positive reward of $(+1)$ for consuming a pellet
+\item A negative reward of $(-5)$ for being caught by a ghost.
+\item A small negative reward of $(-0.1)$ per step to encourage Pac-Man to consume pellets rather than only avoiding the ghost
+\item A small camping penalty of $(-0.05\times s)$, where $s$ is the number of consecutive steps where Pac-Man has not moved. This is to penalize Pac-Man for not moving specifically, encouraging exploration.
+\item A negative reward of $(-1)$ if Pac-Man has not consumed a pellet in 100 turns. This penalty discourages Pac-Man further from ignoring pellets. 
+\item A small reward $(0.02\times d)$, where $d$ is the difference in distance to the closest pellet between the current state and the previous state.
 \end{itemize}
-\item \textbf{Transition Model (P):} The transition model P(s',s,a) defines the probability of transitioning from state s to state s' after taking action a. For Pac-Man's movement, the transition is deterministic. The movement of the ghost is also deterministic, follow a policy under which it tries to move towards Pac-Man to minimize the distance between the two. The transition is stochastic in the case of pellet regeneration, which occurs by the random repopulation of empty squares with pellets. 
+
+\item \textbf{Transition Model (P):} The transition model P(s',s,a) defines the probability of transitioning from state s to state s' after taking action a. For Pac-Man's movement, the transition is deterministic. The movement of the ghost is also deterministic, following a policy under which it tries to move towards Pac-Man to minimize the distance between the two. The transition is stochastic in the case of pellet regeneration, which occurs by the random repopulation of empty squares with pellets. 
 
 \item \textbf{Discount Factor ($\gamma$):} A discount factor, $\gamma \in [0,1]$, is used to weigh the importance of future rewards. A value closer to 1 results in an agent that is more far-sighted, while a value closer to 0 results in an agent that prioritizes immediate rewards. In the case of Pac-Man, where we look to get a high score in the game, $\gamma$ should be relatively high to ensure the agent puts emphasis on future rewards. 
 \end{itemize}
+
+\subsubsection{Pellet Regeneration}
+The environment is non-deterministic due to the randomness of the pellet regeneration in the $\texttt{step}$ function. Pellet regeneration is triggered when Pac-Man has consumed over 20\% of the pellets present at episode start. New pellets are added to a randomly selected $10\%$ of the empty space in the grid, providing a novel environment for Pac-Man that varies the optimal path. 
+
+\subsubsection{Ghost Dynamics}
+The ghost is substantially faster than Pac-Man, moving 2 squares for every time step. This provides a new challenge for Pac-Man, as in the traditional Pac-Man game ghosts are typically slightly slower. This will force more particular strategies to trick the ghost, rather than simply outrunning it. The movement strategy of the ghost is that it deterministically takes the two moves that minimize the distance to the agent, prioritizing the axis with the greater difference between the positions of the two. 
 
 \section{Approaches}
 
 \subsection{Previous Approaches}
 
 \subsection{Algorithms Used}
-
-In this project, we implement the algorithms SARSA and Q-Learning. 
 
 \section{Empirical Studies}
 
