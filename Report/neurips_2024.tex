@@ -93,6 +93,28 @@ The work by Gnanasekaran investigates reinforcement learning methods specificall
 
 \subsection{Results}
 
+\subsubsection{Q-Learning Performance and Behaviour}
+
+We trained the Q-learning agent for 3000 episodes using optimistic initialization, an $\epsilon$-greedy policy with exponential decay, and a constant learning rate. Performance was evaluated every 100 episodes using near-greedy roll-outs ($\epsilon \approx 0$). The results show a clear progression of learning followed by late-stage instability once exploration diminished.
+
+\paragraph{Early Training (Episodes 1--1000).}
+During the initial phase, Pac-Man survived only 10--20 steps per episode, collecting approximately 10--15 pellets. Returns were low (4--9), and evaluation roll-outs showed no pellets collected. Although pellets are plentiful on the board, the agent's early behaviour was dominated by random exploration and frequent deaths, which limited the amount of useful reward collected per episode and slowed the learning process.
+
+\paragraph{Mid Training (Episodes 1000--2000).}
+The agent began to demonstrate structured behaviour, consistently collecting 14--20 pellets and surviving 15--25 steps. Pac-Man reacted to ghost proximity, avoided immediate capture, and reduced purely random movement. This indicated that the Q-values were beginning to encode short-term survival strategies.
+
+\paragraph{Breakthrough phase (Episodes 2000-2500).}
+A significant improvement occurred around episode 2000. Pac-Man collected 50--75 pellets, survived 60--120 steps, and achieved returns between 40 and 65. Evaluation metrics showed similar gains. The agent dropped a cautious strategy focused on maintaining distance from the ghost while clearing large clusters of pellets. This reflects successful propagation of long-term value estimates in the Q-table.
+
+\paragraph{Late Training instability (Episodes 2500+).}
+After $\epsilon$ decayed to its minimum of 0.08, performance became more volatile. With limited exploration and a constant learning rate, the agent over-fitted to deterministic behavioral loops and occasionally reverted to less effective patterns. Pellet regeneration also introduced additional variability by altering the environment mid-episode.
+
+\paragraph{Qualitative Behavioral Observations.}
+During evaluation, we observed that Pac-Man learned to exploit weaknesses in the ghost's Manhattan-distance chase policy. In particular, the agent frequently positioned itself behind walls where the ghost repeatedly moved in circles attempting to minimize the direct grid distance, failing to path around obstacles. This behaviour does not appear directly in training metrics but demonstrates that Q-learning successfully identified structural asymmetries in the environment and used them to extend survival time.
+
+\paragraph{Summary.}
+Overall, Q-learning demonstrated meaningful learning: returns increased from approximately 5 to over 60, and pellet collection improved from ~12 to ~75. While the final policy was not globally optimal and displayed sensitivity to hyper-parameters and deterministic transitions, it consistently outperformed random behaviour and exhibited non-trivial strategic decision-making.
+
 \section{Conclusion}
 
 This project provided a much deeper understanding of how reinforcement learning algorithms behave when placed in dynamic and unpredictable environments. Working with Pac-Man highlighted how sensitive learning strategies are to the structure of the environment. Small changes, such as increasing the ghost’s speed or regenerating pellets, created significant shifts in the difficulty of the task, and each algorithm responded to those changes in different ways. This helped clarify the strengths and weaknesses of traditional value-based methods like SARSA, especially in environments that do not remain static from episode to episode.
