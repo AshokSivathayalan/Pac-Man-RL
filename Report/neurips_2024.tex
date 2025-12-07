@@ -1,14 +1,16 @@
 \documentclass{article}
 
-\usepackage{neurips_2024}
+\usepackage[final]{neurips_2024}
+\usepackage{amsmath}
+\usepackage{url}
+\usepackage{natbib}
 
 \title{Reinforcement Learning in Pac-Man}
 
 \author{
-Anonymous Author(s) \
-Affiliation \
-Address \
-\texttt{email}
+Ashok Sivathayalan, Anna Vrbaski, Abaseen Ahmadzai, Shuva Gautam \\
+COMP 4010\\
+Carleton University \\
 }
 
 \begin{document}
@@ -16,8 +18,10 @@ Address \
 \maketitle
 
 \begin{abstract}
-This project investigates the effectiveness of various reinforcement learning algorithms in the dynamic environment of Pac-Man. We aim to identify the optimal algorithm by evaluating an agent's adaptability to challenges such as faster ghosts and regenerating pellets.By analyzing performance in this modified version of the typical Pac-Man game, we seek to determine which algorithms are most effective at balancing exploration, adaptability, and long-term reward optimization.
+This project investigates the effectiveness of Q-Learning and SARSA in the dynamic environment of Pac-Man. We aim to identify the optimal algorithm by evaluating an agent's adaptability to the novel challenges of a fast ghost moving 2 cells per time step and stochastically regenerating pellets. Both algorithms were trained with a low-dimensional feature representation of the state and an $\epsilon$-greedy policy with exponentially decaying $\epsilon$. Analyzing performance demonstrates an advantage in performance for Q-Learning due to its off-policy nature, with Pac-Man achieving performance of 75 pellets eaten per epsiode, outperforming SARSA by about 10 pellets. We also find substantially shorter convergence time for Q-Learning, in 3000 episodes, as opposed to SARSA taking over 20,000 to reach stable high performance. This performance gap is attributed to the off-policy nature of Q-Learning, which allows it to more effectively learn the optimal path. In spite of this relatively small gap, both algorithms demonstrate significant learning and strategizing to exploit the deterministic ghost and overcome the speed gap to succeed in the novel environment. 
 \end{abstract}
+
+
 
 \section{Introduction}
 
@@ -34,7 +38,7 @@ The central problem this project investigates is determining which reinforcement
 
 Even though Pac-Man is an arcade game from the 1980s, it remains one of the most insightful and widely used environments for studying reinforcement learning. At first glance the game appears simple, but it actually captures many of the core challenges that make real-world decision-making difficult, such as uncertainty, adversarial behavior, delayed consequences, and constantly changing states. These characteristics make Pac-Man an ideal sandbox for evaluating how well different reinforcement learning algorithms can make intelligent decisions under pressure.
 
-Pac-Man acts as a small-scale model of real-world systems. A faster ghost resembles an adversarial agent or unpredictable obstacle that must be avoided in real time. Regenerating pellets are similar to renewable or dynamic resources that must be collected while managing risk. These elements appear in real-world applications such as autonomous driving and robot navigation!
+Pac-Man acts as a small-scale model of real-world systems. A faster ghost resembles an adversarial agent or unpredictable obstacle that must be avoided in real time. Regenerating pellets are similar to renewable or dynamic resources that must be collected while managing risk. Analogous elements can appear in real-world applications, such as autonomous driving and robot navigation. The idea of reinforcement learning in the Pac-Man environment has also been used as a framework for drug discovery.\citep{amkamgari}, demonstrating the widespread applications of this problem. 
 
 Studying algorithm performance in these dynamic Pac-Man environments also helps us understand which learning methods are more robust and capable of generalizing beyond a fixed map or set of conditions. Many reinforcement learning algorithms perform well when the environment never changes, but their performance often breaks down once randomness or unexpected shifts occur. By evaluating algorithms under opponent behavior and resource distribution, we gain insight into their resilience, adaptability, and stability. These qualities are critical for any AI system that is expected to operate in the real world.
 
@@ -81,15 +85,49 @@ The ghost is substantially faster than Pac-Man, moving 2 squares for every time 
 
 \subsection{Previous Approaches}
 
-The first academic document displays previous research on decision-making in Pac-Man environments which has explored a wide range of techniques, from classical search algorithms to simulation-based and probabilistic methods (Novikov & Volodymyr Yanovskyi, 2024). Studies comparing A* and Dijkstra have shown that heuristic-based pathfinding is effective in simple, static mazes, though performance declines as complexity increases. Other work has examined game-tree search approaches such as Expectimax and Alpha-Beta Pruning, which perform well when adversary behavior is predictable but struggle in environments with high uncertainty or large branching factors. In contrast, Monte Carlo Tree Search (MCTS) has consistently demonstrated strong adaptability in dynamic Pac-Man settings, with several papers showing that its simulation-driven strategy makes it more robust than Expectimax or Alpha-Beta in complex mazes. More recent research has introduced variations of MCTS that integrate problem-specific heuristics or neural-network guidance to handle time constraints and improve scalability. Additional work has focused on generating more realistic Pac-Man mazes to better model real-world navigation scenarios. Collectively, these studies highlight the limitations of classical search methods in complex environments and point toward simulation-based and hybrid approaches as the most effective for adaptive decision-making.
+The first academic document displays previous research on decision-making in Pac-Man environments which has explored a wide range of techniques, from classical search algorithms to simulation-based and probabilistic methods (\citet{novikov}). Studies comparing A* and Dijkstra have shown that heuristic-based pathfinding is effective in simple, static mazes, though performance declines as complexity increases. Other work has examined game-tree search approaches such as Expectimax and Alpha-Beta Pruning, which perform well when adversary behavior is predictable but struggle in environments with high uncertainty or large branching factors. In contrast, Monte Carlo Tree Search (MCTS) has consistently demonstrated strong adaptability in dynamic Pac-Man settings, with several papers showing that its simulation-driven strategy makes it more robust than Expectimax or Alpha-Beta in complex mazes. More recent research has introduced variations of MCTS that integrate problem-specific heuristics or neural-network guidance to handle time constraints and improve scalability. Additional work has focused on generating more realistic Pac-Man mazes to better model real-world navigation scenarios. Collectively, these studies highlight the limitations of classical search methods in complex environments and point toward simulation-based and hybrid approaches as the most effective for adaptive decision-making.
 
-The work by Gnanasekaran investigates reinforcement learning methods specifically within Pac-Man and provides a comparative analysis of Q-learning, Approximate Q-learning, and Deep Q-learning (DQN) as applied to increasingly complex grid layouts (Gnanasekaran et al., n.d). Their study shows that basic Q-learning performs decently on small grids but scales poorly as the environment grows. Approximate Q-learning improves performance by using hand-crafted features that enable generalization across similar states, resulting in strong win rates even with limited training. The most significant contribution comes from their implementation of DQN, which uses convolutional neural networks to automatically extract visual features from simplified state representations, allowing the agent to approximate Q-values across large state spaces more efficiently. Their results demonstrate that DQN beats both tabular and feature-based methods on small and medium grids, though it struggles on very large maps without much training. 
+\citet{gnanasekaran} investigates reinforcement learning methods specifically within Pac-Man and provides a comparative analysis of Q-learning, Approximate Q-learning, and Deep Q-learning (DQN) as applied to increasingly complex grid layouts. Their study shows that basic Q-learning performs decently on small grids but scales poorly as the environment grows. Approximate Q-learning improves performance by using hand-crafted features that enable generalization across similar states, resulting in strong win rates even with limited training. The most significant contribution comes from their implementation of DQN, which uses convolutional neural networks to automatically extract visual features from simplified state representations, allowing the agent to approximate Q-values across large state spaces more efficiently. Their results demonstrate that DQN beats both tabular and feature-based methods on small and medium grids, though it struggles on very large maps without much training. 
+
+Previous work has also included the use of the Ms. Pac-Man game to explore the performance of temporal difference algorithms \citep{burrow}, constrasting this algorithm type with evolutionary algorithms. They found that temporal difference algorithms perform most reliably with tabular function approximation, as MLPs can lead to instability. Further, they found significant variation in TD performance depending on reward structure. This validates that there may be performance differences between the off- and on-policy algorithms we consider for this problem, due to how these two algorithm classes react to states with high variance in reward. 
+
+There has also been evidence demonstrating the value of varying the exploration rate $\epsilon$ on Pac-Man performance \citep{galway}. This work experimented by using a genetic algorithm to select the value for $\epsilon$, finding that this dynamic $\epsilon$ value led to significantly increased performance. This work leads us to select a non-constant $\epsilon$ value when training our models, instead using exponential decay to vary the exploration rate over time. 
 
 \subsection{Algorithms Used}
+
+\subsubsection{Q-Learning} Q-Learning is an off-policy temporal difference control algoritm. It learns the action-value function $Q^*\pi(s,a)$, representing the maximum expected reward achievable from state $s$ by taking action $a$, assuming optimal actions are taken. It learns these values regardless of the policy being employed during training. The update rule is:
+
+$$Q(s,a)\leftarrow Q(s,a) + \alpha\left[r + \gamma \max_{a'}Q(s',a')-Q(s,a)\right]$$
+
+The use of the \texttt{max} operator renders this an off-policy algorithm - rather than considering the actual next action, it considers the optimal action to estimate values for the optimal policy. This is a considerable strength for Q-Learning, as opposed to SARSA which is limited to estimating action-values for its actual (likely suboptimal) policy.
+
+\subsubsection{SARSA}
+SARSA (State-Action-Reward-State-Action) is an on-policy TD control algorithm. It learns the action-value function $Q^\pi(s, a)$ for the policy currently being followed ($\pi$). The critical feature of SARSA is that the update to $Q(s, a)$ uses the next action $a'$ that the agent actually takes according to its current policy $\pi$.
+
+The update rule is:
+
+
+$$Q(s, a) \leftarrow Q(s, a) + \alpha \left[ r + \gamma Q(s', a') - Q(s, a) \right]$$
+
+
+In the high-risk Pac-Man environment, SARSA's on-policy nature is expected to promote a conservative policy, as the large collision penalty is factored into the value estimation path via the sampled action $a'$, leading to policies that favor safety over raw speed. The $\epsilon-$greedy policy will lead to occasional suboptimal actions that will impact the action value estimates, unlike in the off-policy SARSA. These will cause SARSA to be wary of states that could lead to a quick death from a suboptimal action, even if the optimal choice would be rewarding. 
 
 \section{Empirical Studies}
 
 \subsection{Experiment Procedure}
+The two algorithms used, Q-Learning and SARSA, were both trained on the Pac-Man environment with various hyperparameters. The optimally performing models from each algorithm were then taken as the final models, analyzed, and compared with each other. Both algorithms were trained using the same \texttt{encode\_state} function for the action-value estimates, in order to minimize the impact of external factors on algorithm performance. 
+
+Both algorithms used a decaying $\epsilon$ value, to increase training stability. The followed formula was $\max(\epsilon_{end}, \epsilon_{start} \cdot e^{-\frac{E}{\tau}})$, for episode $E$ and a value $\tau$ representing the number of episodes over which $\epsilon$-decay occurs. 
+
+\subsubsection{Q-Learning Implementation}
+The off-policy algorithm, Q-Learning's implementation is in line with the update rule outlined above. The agent uses the $\texttt{encode\_state}$ function to store state-action pairs. Additionally, the model was evaluated for 10 episodes every 100 steps to provide an overview of its performance evolution over time.
+
+\subsubsection{SARSA Implementation}
+As the on-policy algorithm chosen for this comparative study, the SARSA agent's implementation adheres to the on-policy temporal difference framework. The agent was designed to operate under the previously-explained $\texttt{encode\_state}$ function, as in Q-Learning. The central training loop $\texttt{train\_sarsa}$ implements the SARSA algorithm as outlined above. As with Q-Learning, the model was evaluated every 100 steps. 
+
+\paragraph{Hyperparameter Tuning}
+Systematic hyperparameter tuning was conducted prior to the comparative study to ensure the algorithm operated under near-optimal conditions. The key parameters tuned were the learning rate ($\alpha$), the discount factor ($\gamma$), and the exploration start rate ($\epsilon_{\text{start}}$).
+For each parameter, various values were tested while holding all other parameters constant at reasonable defaults. The ranges tested were: $\gamma \in \{0.8, 0.9, 0.95, 0.99\}$, $\alpha \in \{0.15, 0.1, 0.05, 0.01\}$, and $\epsilon_{\text{start}} \in \{0.4, 0.25, 0.1, 0.05, 0.01\}$.
 
 \subsection{Results}
 
@@ -112,12 +150,27 @@ After $\epsilon$ decayed to its minimum of 0.08, performance became more volatil
 \paragraph{Qualitative Behavioral Observations.}
 During evaluation, we observed that Pac-Man learned to exploit weaknesses in the ghost's Manhattan-distance chase policy. In particular, the agent frequently positioned itself behind walls where the ghost repeatedly moved in circles attempting to minimize the direct grid distance, failing to path around obstacles. This behaviour does not appear directly in training metrics but demonstrates that Q-learning successfully identified structural asymmetries in the environment and used them to extend survival time.
 
-\paragraph{Summary.}
+\paragraph{Summary}
 Overall, Q-learning demonstrated meaningful learning: returns increased from approximately 5 to over 60, and pellet collection improved from ~12 to ~75. While the final policy was not globally optimal and displayed sensitivity to hyper-parameters and deterministic transitions, it consistently outperformed random behaviour and exhibited non-trivial strategic decision-making.
+
+\subsubsection{SARSA Performance \& Behaviour}
+
+\paragraph{Hyperparameters}
+The tuning process revealed that many hyperparameters had significant performance impacts. The most significant was $\gamma$, which led to the best performance at $\gamma=0.99$. This is expected, as the Pac-Man environment demands long-term planning. A low $\gamma$ value results in Pac-Man putting insufficient weight on future rewards, whereas the ability to eat more pellets in the future is the most important factor in Pac-Man. However, the values for $\epsilon_{start}$ had a much smaller impact. While a large value for $\epsilon_{start}$ led to faster increases in performance at the beginning, over time the impact was minimal. This is to be expected, due to the epsilon decay. Since $\epsilon$ decreases over the course of training, its initial impact ends up being relatively small. The final hyperparameter varied was the learning rate $\alpha$. The result was that a high learning rate tended to lead to erratic reward over time, and failure to converge. This is likely because the strong negative reward that results from getting caught has a great influence on the estimated values, which causes Pac-Man to overreact to the immediate stimulus and significantly change behaviour. 
+
+\subsubsection{Performance}
+There were some similarities between SARSA training and that of Q-Learning. The initial phase consisted of poor performance, collecting approximately 15 pellets, with low returns as a consequence. However, unlike the incremental improvements of Q-Learning, SARSA's improvement was very rapid. After stagnating at a return of 10 for many evaluation steps, SARSA suddenly jumped up to a reward of 53, with over 60 pellets collected, and remained around that mark for the remainder of the training. The likely explanation is that Pac-Man had one very good run, where it managed to collect many more pellets than usual, and the new reward from this path was significant enough to cause Pac-Man to very quickly take it again. Because there were many episodes of stagnation, providing time for action values to converge, even a small improvement in reward could set an action ahead of other options. This is the probable cause behind the massive, sudden jump in performance that is observed by Pac-Man. 
+
+Another interesting result was that SARSA took substantially longer than Q-learning to find the optimal path - while Q-Learning reached significant performance improvements in a few thousand episodes, SARSA took twenty thousand before having its breakthrough. This result is likely a result of Q-Learning's off-policy nature. Q-Learning can learn the true action values of the optimal policy, whereas SARSA's on-policy nature means that risky paths will be consistently undervalued. As the optimal strategy involved getting from the bottom to the top of the maze, while baiting the ghost to come to the bottom from the top, this was likely difficult for SARSA to learn. There are many ways for the ghost to catch Pac-Man when he is trying to do this, so one wrong move from the $\epsilon$-greedy policy could discourage SARSA from trying again. 
+
+\paragraph{Qualitative Behaviour} Much like with SARSA, we see Pac-Man engaging in behaviour to exploit the deterministic ghost following mechanism. As stated, Pac-Man managed to navigate to the top half of the maze, while the ghost was in the bottom half, and fooled the ghost into constantly following a loop while Pac-Man collected pellets with little difficulty in the top half of the maze. This was an interesting result, as Pac-Man and the ghost started respectively in the bottom and top half of the maze. Managing to invert this to exploit the loop in the bottom half of the maze seemed to be difficult for Pac-Man to learn, but once it did the reward was clear. 
+
+\paragraph{Summary} SARSA demonstrated meaningful performance improvements over the course of training - rewards increased to a considerable 53, and pellets eaten to the low 60s. While Q-Learning still slightly outperformed SARSA, this algorithm nevertheless demonstrated the same type of interesting strategic behaviour in the face of the ghost's significant speed advantage. 
+
 
 \section{Conclusion}
 
-This project provided a much deeper understanding of how reinforcement learning algorithms behave when placed in dynamic and unpredictable environments. Working with Pac-Man highlighted how sensitive learning strategies are to the structure of the environment. Small changes, such as increasing the ghost’s speed or regenerating pellets, created significant shifts in the difficulty of the task, and each algorithm responded to those changes in different ways. This helped clarify the strengths and weaknesses of traditional value-based methods like SARSA, especially in environments that do not remain static from episode to episode.
+This project provided a much deeper understanding of how reinforcement learning algorithms behave when placed in dynamic and unpredictable environments. Working with Pac-Man highlighted how sensitive learning strategies are to the structure of the environment. Small changes, such as increasing the ghost’s speed and adding regenerating pellets, created significant shifts in the difficulty of the task, and each algorithm responded to those changes in different ways. This helped clarify the strengths and weaknesses of traditional value-based methods like SARSA, especially in environments that do not remain static from episode to episode.
 
 Another key insight from the project was how important state representation and exploration policies are. Encoding the state in a meaningful way proved essential for the agent to learn any consistent behavior. Similarly, the design of the epsilon-greedy exploration schedule had a noticeable effect on training quality. Too much exploration caused the agent to wander aimlessly for long periods, while too little exploration prevented it from discovering useful behaviors early on. These observations reinforced how interconnected the components of an RL system are, and how tuning one part often influences several others.
 
@@ -126,17 +179,49 @@ Finally, the project revealed that evaluating RL algorithms requires more than s
 
 \subsection{Future Work}
 
-With additional time and computational resources, there are several meaningful extensions that could significantly enhance the project. One major improvement would be experimenting with different reward functions, particularly comparing strategies learned when the agent is rewarded for survival time versus strategies learned when rewards focus on points gained from pellets. Our current work focuses mainly on maximizing score, but shifting the agent’s objective toward staying alive for as long as possible would likely result in a completely different learning pattern. Observing how the agent balances risk, path planning, and ghost avoidance under a survival-based reward function would provide deeper insights into reward shaping and policy differences.
+With additional time and computational resources, there are several meaningful extensions that could significantly enhance the project. One major improvement would be experimenting with different reward functions, particularly comparing strategies learned when the agent is rewarded for survival time versus strategies learned when rewards focus on points gained from pellets. Our current work focuses mainly on maximizing score, but shifting the agent’s objective toward staying alive for as long as possible could result in a different pattern due to the new objective, or a similar one due to the correlation between time alive and pellets eaten. Observing how the agent balances risk, path planning, and ghost avoidance under a survival-based reward function would provide deeper insights into reward shaping and policy differences.
 
 Another extension would involve increasing the complexity of the adversaries. Instead of training against a single ghost, we could introduce multiple ghosts with different movement styles or behaviours, similar to the original Pac-Man game where each ghost has a unique personality. One ghost could aggressively chase Pac-Man, another could patrol certain zones, and another could move randomly. This added diversity would create a much richer and more challenging environment, pushing the reinforcement learning algorithms to develop more sophisticated strategies. It would also allow us to study how well different algorithms adapt to opponents with varied and possibly unpredictable policies. This would also mean a much bigger layout of the map/environment.
 
-Overall, this project was both challenging and enjoyable, and it provided a meaningful opportunity to apply reinforcement learning concepts in a hands-on way. Working with Pac-Man made it easy to visualize how different algorithms learn, adapt, and sometimes fail, which strengthened our understanding far more than plain theory. The experiments highlighted the importance of adaptability in dynamic environments and showed how even small changes in the environment can dramatically influence learning outcomes. 
+Overall, this project provided a meaningful opportunity to apply reinforcement learning concepts in a hands-on way. Working with Pac-Man made it easy to visualize how different algorithms learn, adapt, and sometimes fail, which strengthened our understanding far more than plain theory. The experiments highlighted the importance of adaptability in dynamic environments and showed how even small changes in the environment can dramatically influence learning outcomes. 
 
-\section{Refrences}
+\bibliographystyle{plainnat}
+\bibliography{refs}
 
-Novikov, A., & Volodymyr Yanovskyi. (2024). 
-Analysis of the decision-making algorithm efficiency in complex game environments on the example of Pac-Man. Information Technology and Computer Engineering, 21(3), 108–118. https://doi.org/10.63341/vitce/3.2024.108
+\iffalse
+\section{References}
+\begin{thebibliography}{9}
 
-Gnanasekaran, A., Faba, J., & An, J. (n.d.). Reinforcement Learning in Pacman. https://cs229.stanford.edu/proj2017/final-reports/5241109.pdf
+\bibitem{amkamgari}
+Amkamgari, A. G., Sharma, H., Verma, R., \& Kaliraman, B. (2025).
+\newblock PacMan-RL.
+\newblock In \emph{Genomics at the Nexus of AI, Computer Vision, and Machine Learning} (Chapter 22, pp. 483--504).
+\newblock John Wiley \& Sons, Ltd.
+\newblock \url{https://doi.org/10.1002/9781394268832.ch22}
 
+\bibitem{burrow}Burrow, P., \& Lucas, S. M. (2009).
+\newblock Evolution versus Temporal Difference Learning for learning to play Ms. Pac-Man.
+\newblock In \emph{2009 IEEE Symposium on Computational Intelligence and Games}.
+\newblock \url{https://ieeexplore.ieee.org/abstract/document/5286495}
+
+\bibitem{novikov}
+Novikov, A., \& Yanovskyi, V. (2024).
+\newblock Analysis of the decision-making algorithm efficiency in complex game environments on the example of Pac-Man.
+\newblock \emph{Information Technology and Computer Engineering}, 21(3), 108--118.
+\newblock \url{https://doi.org/10.63341/vitce/3.2024.108}
+
+\bibitem{gnanasekaran}
+Gnanasekaran, A., Faba, J., \& An, J. (n.d.).
+\newblock Reinforcement Learning in Pacman.
+\newblock Stanford University CS229 Final Project Report.
+\newblock \url{https://cs229.stanford.edu/proj2017/final-reports/5241109.pdf}
+
+\bibitem{galway}
+Galway, L., Charles, D., \& Black, M. (2009).
+\newblock Improving Temporal Difference game agent control using a dynamic exploration during control learning.
+\newblock In \emph{2009 IEEE Symposium on Computational Intelligence and Games}.
+\newblock \url{https://ieeexplore.ieee.org/abstract/document/5286497}
+
+\end{thebibliography}
+\fi
 \end{document}
