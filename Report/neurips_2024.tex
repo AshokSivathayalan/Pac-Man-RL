@@ -28,19 +28,17 @@ This report details our COMP4010 project on the application and evaluation of re
 
 \subsection{Problem}
 
-The central problem this project addresses is identifying the most effective reinforcement learning algorithm for an agent playing Pac-Man under a variety of non-static conditions. The core investigation focuses on the agent's ability to adapt its strategy in response to several environmental challenges. These challenges include:
-
-\begin{itemize}
-\item Navigating the maze against a single ghost that moves at a higher speed than the Pac-Man agent.
-\item Scenarios where pellets regenerate after being consumed, maintaining a set minimum number of pellets in the maze at any given time.
-\end{itemize}
-
+The central problem this project investigates is determining which reinforcement learning algorithm performs best when controlling an agent in Pac-Man under a variety of challenging and non-static conditions. Instead of training in a fixed, predictable maze, we intentionally introduce environmental variability to test how well different algorithms can adapt, generalize, and maintain stable behavior. The project looks at several dynamic scenarios, including a single ghost that moves faster than the Pac-Man agent, requiring quick decision-making and strong avoidance strategies. We also study environments where pellets regenerate after being eaten, meaning the agent must navigate trade-offs between revisiting previously cleared areas and avoiding potentially dangerous regions. By exploring all of these variations, the project aims to identify which algorithm demonstrates the strongest adaptability and the most reliable learning performance in unpredictable settings.
 
 \subsection{Importance}
 
-The game of Pac-Man, while seemingly simple, provides a rich and challenging environment that serves as a classic benchmark for reinforcement learning algorithms. Its clearly defined rules, states, and actions make it an ideal testbed for modeling and agent-based learning. The problem is non-trivial; the optimal strategy is not immediately obvious, requiring a balance between offensive (pellet-seeking) and defensive (ghost-avoiding) tactics.
+Even though Pac-Man is an arcade game from the 1980s, it remains one of the most insightful and widely used environments for studying reinforcement learning. At first glance the game appears simple, but it actually captures many of the core challenges that make real-world decision-making difficult, such as uncertainty, adversarial behavior, delayed consequences, and constantly changing states. These characteristics make Pac-Man an ideal sandbox for evaluating how well different reinforcement learning algorithms can make intelligent decisions under pressure.
 
-By studying how different algorithms perform in a dynamic Pac-Man environment, we can gain valuable insights into their robustness, adaptability, and efficiency. These findings have broader implications beyond the game itself, informing the application of reinforcement learning to real-world problems characterized by uncertainty and changing conditions, such as robotics, autonomous navigation, and resource management.
+Pac-Man acts as a small-scale model of real-world systems. A faster ghost resembles an adversarial agent or unpredictable obstacle that must be avoided in real time. Regenerating pellets are similar to renewable or dynamic resources that must be collected while managing risk. These elements appear in real-world applications such as autonomous driving and robot navigation!
+
+Studying algorithm performance in these dynamic Pac-Man environments also helps us understand which learning methods are more robust and capable of generalizing beyond a fixed map or set of conditions. Many reinforcement learning algorithms perform well when the environment never changes, but their performance often breaks down once randomness or unexpected shifts occur. By evaluating algorithms under opponent behavior and resource distribution, we gain insight into their resilience, adaptability, and stability. These qualities are critical for any AI system that is expected to operate in the real world.
+
+Finally, this problem matters because Pac-Man provides an intuitive and accessible way to visualize reinforcement learning in action. Watching an agent learn to survive longer, avoid threats, and navigate more efficiently makes the underlying concepts easier to understand. This connection between theory and observable behavior makes Pac-Man an effective environment for experimentation, teaching, and developing intuition about reinforcement learning algorithms.
 
 \subsection{MDP Specification}
 
@@ -83,6 +81,10 @@ The ghost is substantially faster than Pac-Man, moving 2 squares for every time 
 
 \subsection{Previous Approaches}
 
+The first academic document displays previous research on decision-making in Pac-Man environments which has explored a wide range of techniques, from classical search algorithms to simulation-based and probabilistic methods (Novikov & Volodymyr Yanovskyi, 2024). Studies comparing A* and Dijkstra have shown that heuristic-based pathfinding is effective in simple, static mazes, though performance declines as complexity increases. Other work has examined game-tree search approaches such as Expectimax and Alpha-Beta Pruning, which perform well when adversary behavior is predictable but struggle in environments with high uncertainty or large branching factors. In contrast, Monte Carlo Tree Search (MCTS) has consistently demonstrated strong adaptability in dynamic Pac-Man settings, with several papers showing that its simulation-driven strategy makes it more robust than Expectimax or Alpha-Beta in complex mazes. More recent research has introduced variations of MCTS that integrate problem-specific heuristics or neural-network guidance to handle time constraints and improve scalability. Additional work has focused on generating more realistic Pac-Man mazes to better model real-world navigation scenarios. Collectively, these studies highlight the limitations of classical search methods in complex environments and point toward simulation-based and hybrid approaches as the most effective for adaptive decision-making.
+
+The work by Gnanasekaran investigates reinforcement learning methods specifically within Pac-Man and provides a comparative analysis of Q-learning, Approximate Q-learning, and Deep Q-learning (DQN) as applied to increasingly complex grid layouts (Gnanasekaran et al., n.d). Their study shows that basic Q-learning performs decently on small grids but scales poorly as the environment grows. Approximate Q-learning improves performance by using hand-crafted features that enable generalization across similar states, resulting in strong win rates even with limited training. The most significant contribution comes from their implementation of DQN, which uses convolutional neural networks to automatically extract visual features from simplified state representations, allowing the agent to approximate Q-values across large state spaces more efficiently. Their results demonstrate that DQN beats both tabular and feature-based methods on small and medium grids, though it struggles on very large maps without much training. 
+
 \subsection{Algorithms Used}
 
 \section{Empirical Studies}
@@ -91,8 +93,50 @@ The ghost is substantially faster than Pac-Man, moving 2 squares for every time 
 
 \subsection{Results}
 
+\subsubsection{Q-Learning Performance and Behaviour}
+
+We trained the Q-learning agent for 3000 episodes using optimistic initialization, an $\epsilon$-greedy policy with exponential decay, and a constant learning rate. Performance was evaluated every 100 episodes using near-greedy roll-outs ($\epsilon \approx 0$). The results show a clear progression of learning followed by late-stage instability once exploration diminished.
+
+\paragraph{Early Training (Episodes 1--1000).}
+During the initial phase, Pac-Man survived only 10--20 steps per episode, collecting approximately 10--15 pellets. Returns were low (4--9), and evaluation roll-outs showed no pellets collected. Although pellets are plentiful on the board, the agent's early behaviour was dominated by random exploration and frequent deaths, which limited the amount of useful reward collected per episode and slowed the learning process.
+
+\paragraph{Mid Training (Episodes 1000--2000).}
+The agent began to demonstrate structured behaviour, consistently collecting 14--20 pellets and surviving 15--25 steps. Pac-Man reacted to ghost proximity, avoided immediate capture, and reduced purely random movement. This indicated that the Q-values were beginning to encode short-term survival strategies.
+
+\paragraph{Breakthrough phase (Episodes 2000-2500).}
+A significant improvement occurred around episode 2000. Pac-Man collected 50--75 pellets, survived 60--120 steps, and achieved returns between 40 and 65. Evaluation metrics showed similar gains. The agent dropped a cautious strategy focused on maintaining distance from the ghost while clearing large clusters of pellets. This reflects successful propagation of long-term value estimates in the Q-table.
+
+\paragraph{Late Training instability (Episodes 2500+).}
+After $\epsilon$ decayed to its minimum of 0.08, performance became more volatile. With limited exploration and a constant learning rate, the agent over-fitted to deterministic behavioral loops and occasionally reverted to less effective patterns. Pellet regeneration also introduced additional variability by altering the environment mid-episode.
+
+\paragraph{Qualitative Behavioral Observations.}
+During evaluation, we observed that Pac-Man learned to exploit weaknesses in the ghost's Manhattan-distance chase policy. In particular, the agent frequently positioned itself behind walls where the ghost repeatedly moved in circles attempting to minimize the direct grid distance, failing to path around obstacles. This behaviour does not appear directly in training metrics but demonstrates that Q-learning successfully identified structural asymmetries in the environment and used them to extend survival time.
+
+\paragraph{Summary.}
+Overall, Q-learning demonstrated meaningful learning: returns increased from approximately 5 to over 60, and pellet collection improved from ~12 to ~75. While the final policy was not globally optimal and displayed sensitivity to hyper-parameters and deterministic transitions, it consistently outperformed random behaviour and exhibited non-trivial strategic decision-making.
+
 \section{Conclusion}
 
+This project provided a much deeper understanding of how reinforcement learning algorithms behave when placed in dynamic and unpredictable environments. Working with Pac-Man highlighted how sensitive learning strategies are to the structure of the environment. Small changes, such as increasing the ghost’s speed or regenerating pellets, created significant shifts in the difficulty of the task, and each algorithm responded to those changes in different ways. This helped clarify the strengths and weaknesses of traditional value-based methods like SARSA, especially in environments that do not remain static from episode to episode.
+
+Another key insight from the project was how important state representation and exploration policies are. Encoding the state in a meaningful way proved essential for the agent to learn any consistent behavior. Similarly, the design of the epsilon-greedy exploration schedule had a noticeable effect on training quality. Too much exploration caused the agent to wander aimlessly for long periods, while too little exploration prevented it from discovering useful behaviors early on. These observations reinforced how interconnected the components of an RL system are, and how tuning one part often influences several others.
+
+Finally, the project revealed that evaluating RL algorithms requires more than simply measuring cumulative reward. Robustness, stability, and adaptability turned out to be equally important metrics, especially in environments designed to change over time. A method that performs well under one set of conditions may fail completely in a modified layout or against a faster ghost.
+
+
 \subsection{Future Work}
+
+With additional time and computational resources, there are several meaningful extensions that could significantly enhance the project. One major improvement would be experimenting with different reward functions, particularly comparing strategies learned when the agent is rewarded for survival time versus strategies learned when rewards focus on points gained from pellets. Our current work focuses mainly on maximizing score, but shifting the agent’s objective toward staying alive for as long as possible would likely result in a completely different learning pattern. Observing how the agent balances risk, path planning, and ghost avoidance under a survival-based reward function would provide deeper insights into reward shaping and policy differences.
+
+Another extension would involve increasing the complexity of the adversaries. Instead of training against a single ghost, we could introduce multiple ghosts with different movement styles or behaviours, similar to the original Pac-Man game where each ghost has a unique personality. One ghost could aggressively chase Pac-Man, another could patrol certain zones, and another could move randomly. This added diversity would create a much richer and more challenging environment, pushing the reinforcement learning algorithms to develop more sophisticated strategies. It would also allow us to study how well different algorithms adapt to opponents with varied and possibly unpredictable policies. This would also mean a much bigger layout of the map/environment.
+
+Overall, this project was both challenging and enjoyable, and it provided a meaningful opportunity to apply reinforcement learning concepts in a hands-on way. Working with Pac-Man made it easy to visualize how different algorithms learn, adapt, and sometimes fail, which strengthened our understanding far more than plain theory. The experiments highlighted the importance of adaptability in dynamic environments and showed how even small changes in the environment can dramatically influence learning outcomes. 
+
+\section{Refrences}
+
+Novikov, A., & Volodymyr Yanovskyi. (2024). 
+Analysis of the decision-making algorithm efficiency in complex game environments on the example of Pac-Man. Information Technology and Computer Engineering, 21(3), 108–118. https://doi.org/10.63341/vitce/3.2024.108
+
+Gnanasekaran, A., Faba, J., & An, J. (n.d.). Reinforcement Learning in Pacman. https://cs229.stanford.edu/proj2017/final-reports/5241109.pdf
 
 \end{document}
