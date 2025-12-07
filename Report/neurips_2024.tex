@@ -83,6 +83,8 @@ The ghost is substantially faster than Pac-Man, moving 2 squares for every time 
 
 The first academic document displays previous research on decision-making in Pac-Man environments which has explored a wide range of techniques, from classical search algorithms to simulation-based and probabilistic methods (Novikov & Volodymyr Yanovskyi, 2024). Studies comparing A* and Dijkstra have shown that heuristic-based pathfinding is effective in simple, static mazes, though performance declines as complexity increases. Other work has examined game-tree search approaches such as Expectimax and Alpha-Beta Pruning, which perform well when adversary behavior is predictable but struggle in environments with high uncertainty or large branching factors. In contrast, Monte Carlo Tree Search (MCTS) has consistently demonstrated strong adaptability in dynamic Pac-Man settings, with several papers showing that its simulation-driven strategy makes it more robust than Expectimax or Alpha-Beta in complex mazes. More recent research has introduced variations of MCTS that integrate problem-specific heuristics or neural-network guidance to handle time constraints and improve scalability. Additional work has focused on generating more realistic Pac-Man mazes to better model real-world navigation scenarios. Collectively, these studies highlight the limitations of classical search methods in complex environments and point toward simulation-based and hybrid approaches as the most effective for adaptive decision-making.
 
+The work by Gnanasekaran investigates reinforcement learning methods specifically within Pac-Man and provides a comparative analysis of Q-learning, Approximate Q-learning, and Deep Q-learning (DQN) as applied to increasingly complex grid layouts (Gnanasekaran et al., n.d). Their study shows that basic Q-learning performs decently on small grids but scales poorly as the environment grows. Approximate Q-learning improves performance by using hand-crafted features that enable generalization across similar states, resulting in strong win rates even with limited training. The most significant contribution comes from their implementation of DQN, which uses convolutional neural networks to automatically extract visual features from simplified state representations, allowing the agent to approximate Q-values across large state spaces more efficiently. Their results demonstrate that DQN beats both tabular and feature-based methods on small and medium grids, though it struggles on very large maps without much training. 
+
 \subsection{Algorithms Used}
 
 \section{Empirical Studies}
@@ -113,5 +115,6 @@ Overall, this project was both challenging and enjoyable, and it provided a mean
 Novikov, A., & Volodymyr Yanovskyi. (2024). 
 Analysis of the decision-making algorithm efficiency in complex game environments on the example of Pac-Man. Information Technology and Computer Engineering, 21(3), 108–118. https://doi.org/10.63341/vitce/3.2024.108
 
+Gnanasekaran, A., Faba, J., & An, J. (n.d.). Reinforcement Learning in Pacman. https://cs229.stanford.edu/proj2017/final-reports/5241109.pdf
 
 \end{document}
